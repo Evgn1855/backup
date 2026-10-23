@@ -193,3 +193,55 @@ ssh-copy-id -p 22 siadmin@192.168.0.12
 
 ![alt_text](images/image13.png "image_tooltip")
 
+Для удаления старых копий 
+```
+#!/bin/bash
+
+SRC_DIR="$HOME"
+REMOTE_USER="siadmin"
+REMOTE_HOST="192.168.0.12"
+REMOTE_PORT="22"
+REMOTE_BACKUP_DIR="/home/siadmin/BACKUP"
+KEEP_BACKUPS=5
+
+# Текущая дата и время для новой папки
+DATE_TAG=$(date +%Y-%m-%d_%H-%M-%S)
+CURRENT_BACKUP_PATH="${REMOTE_BACKUP_DIR}/${DATE_TAG}"
+
+#echo $CURRENT_BACKUP_PATH
+
+#ssh -p $REMOTE_PORT $REMOTE_USER@$REMOTE_HOST "mkdir -p ${REMOTE_BACKUP_DIR}"
+
+# Поиск последней созданной копии для жестких ссылок (--link-dest)
+LATEST_BACKUP=$(ssh -p $REMOTE_PORT $REMOTE_USER@$REMOTE_HOST "find ${REMOTE_BACKUP_DIR} -maxdepth 1 -type d -name '20[0-9][0-9]-*' -printf '%P\n' 2>/dev/null | sort | tail -n 1")
+echo $LATEST_BACKUP
+LINK_DEST_PARAM=""
+#Если найден предыдущий бекап то
+if [ -n "$LATEST_BACKUP" ]; then
+    LINK_DEST_PARAM="--link-dest=../${LATEST_BACKUP}"
+fi
+#иначе создается полная копия
+
+# Выполнение rsync
+rsync -avz --delete \
+    $LINK_DEST_PARAM \
+    --exclude '.cache/' \
+    --exclude 'Downloads/' \
+    --exclude '.virtualenvs/' \
+    --exclude ".*" \
+    -e "ssh -p $REMOTE_PORT" \
+    "$SRC_DIR/" "$REMOTE_USER@$REMOTE_HOST:$CURRENT_BACKUP_PATH"
+if [ $? -eq 0 ]; then
+        echo "Резервная копия успешно создана в: $CURRENT_BACKUP_PATH"
+else
+        echo "ERROR BACKUP"
+fi
+echo "Проверка старых резервных копий..."
+
+# Скрипт ищет все папки бэкапов, сортирует их от старых к новым,
+# и удаляет всё, что не попало в последние $KEEP_BACKUPS штук.
+ssh -p $REMOTE_PORT $REMOTE_USER@$REMOTE_HOST "export KEEP_BACKUPS=$KEEP_BACKUPS; find ${REMOTE_BACKUP_DIR} -maxdepth 1 -type d -name '20[0-9][0-9]-*' | sort | head -n -\$KEEP_BACKUPS | xargs -I {} rm -rf '{}'"
+echo $KEEP_BACKUPS
+echo "Очистка завершена. На сервере оставлено последние $KEEP_BACKUPS копий."
+
+```
