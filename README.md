@@ -107,8 +107,7 @@ __Задание 4*__
 * Напишите скрипт управления резервными копиями, в нем можно выбрать резервную копию и данные восстановятся к состоянию на момент создания данной резервной копии.
 * На проверку направьте скрипт и скриншоты, демонстрирующие его работу в различных сценариях.
 
-    ```
-rsync -ac --delete --delete-excluded  --exclude '.*' --progress . siadmin@192.168.0.12:/home/siadmin/BACKUP
+```rsync -ac --delete --delete-excluded  --exclude '.*' --progress . siadmin@192.168.0.12:/home/siadmin/BACKUP
 ```
 
 
@@ -128,8 +127,7 @@ rsync -ac --delete --delete-excluded  --exclude '.*' --progress . siadmin@192.16
 find . -maxdepth 1 -type d -name '20[0-9][0-9]-*' -printf '%P\n' 2>/dev/null | sort | tail -n 1
 
 
-```
-#!/bin/bash
+```#!/bin/bash
 
 SRC_DIR="$HOME"
 REMOTE_USER="siadmin"
